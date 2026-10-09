@@ -112,3 +112,12 @@ InitTestScene*.unity*
 
 # Auto-generated cache in Assets folder
 /[Aa]ssets/[Ss]ceneDependencyCache*
+
+# Local IDE state
+.idea/
+*.sln.iml
+
+# Operating system metadata
+.DS_Store
+Thumbs.db
+Desktop.ini
