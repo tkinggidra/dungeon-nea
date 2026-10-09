@@ -1,8 +1,7 @@
 ﻿<div align="center">
 
-<img src="https://tokei.rs/b1/github/tkinggidra/dungeon-nea?branch=main&category=code&label=main%20LOC&style=flat-square" alt="Main LOC"/>
-<img src="https://tokei.rs/b1/github/tkinggidra/dungeon-nea?branch=prototype&category=code&label=prototype%20LOC&style=flat-square" alt="Prototype LOC"/>
-<img src="https://img.shields.io/github/commit-activity/t/tkinggidra/dungeon-nea?style=flat-square&label=commits" alt="Commits"/>
+<img src="https://img.shields.io/endpoint?url=https%3A%2F%2Floctopus.creeperkatze.dev%2Fgithub%2Ftkinggidra%2Fdungeon-nea%2Fbadge&color=c78aff&style=for-the-badge" alt="Lines of Code"/>
+<img src="https://img.shields.io/github/commit-activity/t/tkinggidra/dungeon-nea?color=c78aff&label=commits&style=for-the-badge" alt="Commits"/>
 
 ## me be like boiiii what the helly 🫱🫱🫱
 
