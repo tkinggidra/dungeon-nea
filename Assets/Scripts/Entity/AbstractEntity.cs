@@ -1,5 +1,6 @@
 ﻿using System;
 using Core.Tick;
+using Entity.Attributes;
 using World;
 using Entity.Components;
 
@@ -14,6 +15,7 @@ namespace Entity
         public bool IsActive => State == EntityState.Active;
         
         public EntityComponents Components { get; }
+        public EntityAttributes Attributes { get; } = new();
 
         protected AbstractEntity()
         {
