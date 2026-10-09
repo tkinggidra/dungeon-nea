@@ -1,0 +1,107 @@
+name: Source LOC badges
+
+on:
+  push:
+    branches: [main, prototype]
+  workflow_dispatch:
+
+permissions: {}
+
+# Each surviving run refreshes both branches, even if a pending run is replaced.
+concurrency:
+  group: source-loc-badges
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Check out main source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: main
+          path: main
+          persist-credentials: false
+
+      - name: Check out prototype source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: prototype
+          path: prototype
+          persist-credentials: false
+
+      - name: Install checksum-verified scc
+        env:
+          SCC_VERSION: 4.1.0
+          SCC_SHA256: c7328436d3027f4357d3d7853f7dc3ac2bbcb4ca08f1adad91a27c593884079b
+        run: |
+          tool_dir="$RUNNER_TEMP/scc"
+          mkdir -p "$tool_dir"
+          curl --fail --silent --show-error --location --retry 3 \
+            "https://github.com/boyter/scc/releases/download/v${SCC_VERSION}/scc_Linux_x86_64.tar.gz" \
+            --output "$tool_dir/scc.tar.gz"
+          printf '%s  %s\n' "$SCC_SHA256" "$tool_dir/scc.tar.gz" | sha256sum --check
+          tar -xzf "$tool_dir/scc.tar.gz" -C "$tool_dir" scc
+          echo "$tool_dir" >> "$GITHUB_PATH"
+
+      - name: Count C# source on both branches
+        env:
+          BADGE_DIRECTORY: ${{ runner.temp }}/loc-badges
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          import subprocess
+
+          output = Path(os.environ["BADGE_DIRECTORY"])
+          output.mkdir(parents=True, exist_ok=True)
+          for branch in ("main", "prototype"):
+              source = Path(branch) / "Assets" / "Scripts"
+              files = sorted(str(path.resolve()) for path in source.rglob("*.cs")
+                             if path.is_file() and not path.is_symlink())
+              statistics = []
+              if files:
+                  statistics = json.loads(subprocess.check_output([
+                      "scc", "--no-config", "--no-gitignore", "--no-ignore",
+                      "--no-scc-ignore", "--no-cocomo", "--no-complexity",
+                      "--no-gen", "--include-ext", "cs", "--format", "json",
+                      "--", *files,
+                  ], text=True)) or []
+              code = sum(item["Code"] for item in statistics)
+              count = sum(item["Count"] for item in statistics)
+              badge = {"schemaVersion": 1, "label": f"{branch} LOC",
+                       "message": str(code), "color": "c78aff"}
+              (output / f"{branch}.json").write_text(
+                  json.dumps(badge, indent=2) + "\n", encoding="utf-8")
+              print(f"{branch}: {code} code lines in {count} C# files")
+          PY
+
+      - name: Publish persistent badge data
+        env:
+          BADGE_DIRECTORY: ${{ runner.temp }}/loc-badges
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh auth setup-git --hostname github.com
+          publication=$(mktemp -d)
+          cd "$publication"
+          git init --quiet --initial-branch=badges
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          badge_ref=$(git ls-remote --heads origin refs/heads/badges)
+          if [[ -n "$badge_ref" ]]; then
+            git fetch --quiet --depth=1 origin badges
+            git checkout --quiet --detach FETCH_HEAD
+          fi
+          cp "$BADGE_DIRECTORY/main.json" "$BADGE_DIRECTORY/prototype.json" .
+          git add main.json prototype.json
+          if git diff --cached --quiet; then
+            echo "LOC counts are unchanged."
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit --quiet -m 'ci: update source LOC badges'
+          git push origin HEAD:refs/heads/badges
