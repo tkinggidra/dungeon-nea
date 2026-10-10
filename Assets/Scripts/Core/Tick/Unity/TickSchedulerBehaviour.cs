@@ -17,9 +17,5 @@ namespace Core.Tick.Unity
                         throw new ArgumentNullException(nameof(scheduler)); ;
         }
 
-        private void Update()
-        {
-            Scheduler?.Advance(Time.deltaTime);
-        }
     }
 }

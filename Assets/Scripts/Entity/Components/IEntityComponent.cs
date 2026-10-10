@@ -2,7 +2,7 @@
 {
     public interface IEntityComponent
     {
-        void OnAttach(AbstractEntity entity);
+        void OnAttach(Entity entity);
         void OnDetach();
     }
 }

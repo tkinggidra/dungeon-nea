@@ -6,14 +6,14 @@ namespace Entity.Components
 {
     public sealed class EntityComponents
     {
-        private readonly AbstractEntity _owner;
+        private readonly Entity _owner;
         
         private readonly Dictionary<Type, IEntityComponent> _components = new();
         private readonly List<ITickingComponent> _tickingComponents = new();
         
         public int Count => _components.Count;
 
-        public EntityComponents(AbstractEntity owner)
+        public EntityComponents(Entity owner)
         {
             this._owner = owner;
         }

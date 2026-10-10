@@ -1,6 +1,6 @@
 ﻿namespace Entity.Attributes
 {
-    public static class Attributes
+    public static class AttributeTypes
     {
         public static readonly EntityAttribute MaxHealth =
             new("max_health", 100, 1, 100_000);

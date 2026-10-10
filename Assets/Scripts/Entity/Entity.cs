@@ -6,7 +6,7 @@ using Entity.Components;
 
 namespace Entity
 {
-    public abstract class AbstractEntity
+    public abstract class Entity
     {
         public EntityId EntityId { get; private set; }
         public Level Level { get; private set; }
@@ -17,7 +17,7 @@ namespace Entity
         public EntityComponents Components { get; }
         public EntityAttributes Attributes { get; } = new();
 
-        protected AbstractEntity()
+        protected Entity()
         {
             Components = new EntityComponents(this);
         }

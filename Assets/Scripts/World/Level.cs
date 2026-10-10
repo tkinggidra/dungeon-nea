@@ -1,15 +1,16 @@
 ﻿using System.Collections.Generic;
 using Core.Tick;
 using Entity;
+using World.Player;
 
 namespace World
 {
     public sealed class Level : ITickable
     {
-        private readonly Dictionary<EntityId, AbstractEntity> _entities = new();
-        private readonly List<AbstractEntity> _tickOrder = new();
+        private readonly Dictionary<EntityId, Entity.Entity> _entities = new();
+        private readonly List<Entity.Entity> _tickOrder = new();
         
-        private readonly List<AbstractEntity> _pendingAdditions = new();
+        private readonly List<Entity.Entity> _pendingAdditions = new();
         private readonly HashSet<EntityId> _pendingRemovals = new();
 
         private int nextEntityId = 1;
@@ -19,7 +20,7 @@ namespace World
         
         public int EntityCount => _entities.Count;
 
-        public bool AddEntity(AbstractEntity entity)
+        public bool AddEntity(Entity.Entity entity)
         {
             if (entity.State != EntityState.Unspawned)
                 return false;
@@ -37,7 +38,16 @@ namespace World
             return true;
         }
 
-        public bool RemoveEntity(AbstractEntity entity)
+        public Entity.Player AddPlayer(PlayerInput playerInput)
+        {
+            var player = new Entity.Player(playerInput);
+            player.AddFlag(LivingEntityFlags.Invulnerable);
+            
+            var playerAdded = AddEntity(player);
+            return playerAdded ? player : null;
+        }
+
+        public bool RemoveEntity(Entity.Entity entity)
         {
             if (!_entities.ContainsKey(entity.EntityId))
                 return false;
@@ -55,7 +65,7 @@ namespace World
             return true;
         }
 
-        public bool TryGetEntity(EntityId entityId, out AbstractEntity entity)
+        public bool TryGetEntity(EntityId entityId, out Entity.Entity entity)
         {
             return _entities.TryGetValue(entityId, out entity);
         }
@@ -67,7 +77,7 @@ namespace World
 
             try
             {
-                foreach (AbstractEntity entity in _tickOrder)
+                foreach (Entity.Entity entity in _tickOrder)
                 {
                     if (_pendingRemovals.Contains(entity.EntityId))
                         continue;
@@ -82,7 +92,7 @@ namespace World
             }
         }
 
-        private void AddImmediately(AbstractEntity entity)
+        private void AddImmediately(Entity.Entity entity)
         {
             var id = new EntityId(nextEntityId++);
             
@@ -110,7 +120,7 @@ namespace World
             
             _pendingRemovals.Clear();
 
-            foreach (AbstractEntity entity in _pendingAdditions)
+            foreach (Entity.Entity entity in _pendingAdditions)
                 AddImmediately(entity);
             
             _pendingAdditions.Clear();
