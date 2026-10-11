@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace Core.Tick
 {
@@ -8,7 +7,6 @@ namespace Core.Tick
     {
         private const int TicksPerSecond = 20;
         private const double TickInterval = 1.0 / TicksPerSecond;
-
         private const int MaxTicksPerFrame = 5;
         
         private readonly List<ITickable> _tickables = new();
@@ -24,8 +22,11 @@ namespace Core.Tick
         public ulong DroppedTicks { get; private set; }
 
         public double InterpolationAlpha =>
-            Math.Max(0.0, Math.Min(1.0, _accumulator / TickInterval));
+            Math.Clamp(_accumulator / TickInterval, 0.0, 1.0);
 
+        public event Action BeforeTick;
+        public event Action AfterTick;
+        
         public void Advance(double deltaTime)
         {
             if (double.IsNaN(deltaTime) ||
@@ -54,7 +55,7 @@ namespace Core.Tick
             {
                 ulong dropped = (ulong)(_accumulator / TickInterval);
                 
-                DroppedTicks = dropped;
+                DroppedTicks += dropped;
                 _accumulator %= TickInterval;
             }
         }
@@ -73,7 +74,7 @@ namespace Core.Tick
                 return false;
             }
             
-            _registered.Add(tickable);
+            _pendingAdditions.Add(tickable);
             return true;
         }
 
@@ -88,7 +89,7 @@ namespace Core.Tick
             if  (!_registered.Contains(tickable))
                 return false;
             
-            return _registered.Remove(tickable);
+            return _pendingRemovals.Add(tickable);
         }
 
         private void RunTick()
@@ -103,6 +104,8 @@ namespace Core.Tick
 
             try
             {
+                BeforeTick?.Invoke();
+                
                 foreach (ITickable tickable in _tickables)
                 {
                     if (_pendingRemovals.Contains(tickable))
@@ -114,7 +117,15 @@ namespace Core.Tick
             finally
             {
                 _isTicking = false;
-                ApplyPendingChanges();
+
+                try
+                {
+                    ApplyPendingChanges();
+                }
+                finally
+                {
+                    AfterTick?.Invoke();
+                }
             }
         }
 
