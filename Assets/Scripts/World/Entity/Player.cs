@@ -7,8 +7,6 @@ namespace World.Entity
     public class Player : LivingEntity
     {
         private PlayerInput _playerInput;
-        
-        public Vector3 Position;
 
         public Player(PlayerInput playerInput)
         {
