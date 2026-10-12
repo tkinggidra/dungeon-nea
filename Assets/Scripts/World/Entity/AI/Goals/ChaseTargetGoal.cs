@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Numerics;
+using Core;
 using World.Navigation;
 
 namespace World.Entity.AI.Goals
@@ -11,7 +12,7 @@ namespace World.Entity.AI.Goals
 
         private bool _hasValidRoute;
 
-        private (int x, int y)? _lastTargetCell;
+        private BlockPos? _lastTargetCell;
         
         public override GoalFlag Flags => GoalFlag.Move;
 
@@ -64,18 +65,16 @@ namespace World.Entity.AI.Goals
         {
             Vector3 targetPosition = _mob.Target.Transform.Position;
             
-            var targetCell = ToCell(targetPosition);
+            var targetCell = BlockPos.FromWorldPosition(targetPosition);
 
             if (_lastTargetCell != targetCell)
             {
                 Vector3 mobPosition = _mob.Transform.Position;
-                var startCell = ToCell(mobPosition);
+                var startCell = BlockPos.FromWorldPosition(mobPosition);
 
                 var path = _pathFinder.FindPath(
-                    startCell.X,
-                    startCell.Z,
-                    targetCell.X,
-                    targetCell.Z);
+                    startCell,
+                    targetCell);
                 
                 _mob.Navigation.SetPath(path);
                 
@@ -112,13 +111,6 @@ namespace World.Entity.AI.Goals
                     _mob.Target.Transform);
             
             return distanceSquared <= StopDistance * StopDistance;
-        }
-
-        private static (int X, int Z) ToCell(Vector3 position)
-        {
-            return (
-                (int)MathF.Round(position.X),
-                (int)MathF.Round(position.Z));
         }
     }
 }

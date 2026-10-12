@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Numerics;
+using Core.Physics;
 using Core.Tick;
 using World.Entity.Attributes;
 using World.Entity.Components;
@@ -14,6 +16,13 @@ namespace World.Entity
         public EntityState State { get; private set; } =
             EntityState.Unspawned;
         public bool IsActive => State == EntityState.Active;
+
+        public virtual float Width => 0.6f;
+        public virtual float Depth => 0.6f;
+        public AABB BoundingBox => AABB.FromCenter(
+            new Vector2(Transform.Position.X, Transform.Position.Z),
+            Width,
+            Depth);
         
         public EntityComponents Components { get; }
         public EntityAttributes Attributes { get; } = new();
@@ -88,6 +97,24 @@ namespace World.Entity
                 return;
 
             Level?.RemoveEntity(this);
+        }
+
+        public void Move(Vector3 displacement)
+        {
+            Vector3 resolved = Level.ResolveMovement(
+                BoundingBox,
+                displacement);
+
+            if (displacement.LengthSquared() > 0f)
+            {
+                UnityEngine.Debug.Log(
+                    $"Position: {Transform.Position} | " +
+                    $"Bounds: {BoundingBox} | " +
+                    $"Requested: {displacement} | " +
+                    $"Resolved: {resolved}");
+            }
+
+            Transform.Translate(resolved);
         }
         
         protected virtual void OnSpawn() { }

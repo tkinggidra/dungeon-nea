@@ -12,6 +12,7 @@ namespace World.Player.Unity
         private InputActionMap _inputActionMap;
         
         private InputAction _moveAction;
+        private InputAction _dashAction;
         
         public void Initialize(PlayerInput playerInput)
         {
@@ -21,16 +22,20 @@ namespace World.Player.Unity
                 "Player", true);
             
             _moveAction = _inputActionMap.FindAction("Move", true);
+            _dashAction = _inputActionMap.FindAction("Dash", true);
             
             _inputActionMap.Enable();
         }
 
         public void CaptureInput()
         {
-            var movement = _moveAction.ReadValue<Vector2>();
-            
-            _playerInput.MovementValue = new(movement.x, movement.y);
-            // print(_playerInput.MovementValue);
+            Vector2 movement = _moveAction.ReadValue<Vector2>();
+
+            _playerInput.MovementValue = new(
+                movement.x,
+                movement.y);
+
+            _playerInput.Dash |= _dashAction.WasPressedThisFrame();
         }
 
         private void OnDisable()

@@ -1,4 +1,5 @@
 ﻿using System;
+using Core.Physics;
 using Core.Tick;
 using Core.Tick.Unity;
 using World.Entity;
@@ -15,12 +16,13 @@ namespace Core.Unity
     {
         [SerializeField] private TickSchedulerBehaviour tickSchedulerBehaviour;
         [SerializeField] private PlayerInputBehaviour playerInputBehaviour;
-        [SerializeField] private PlayerBehaviour playerBehaviour;
-        [SerializeField] private EntityBehaviour entityBehaviour;
-
-        private TESTChaserMob _testMob;
+        [SerializeField] private PlayerBehaviour playerPrefab;
+        [SerializeField] private EntityBehaviour entityPrefab;
+        [SerializeField] private Transform entityContainer;
         
+        private EntityView _entityView;
         private TickScheduler _tickScheduler;
+        private EntityRenderer _entityRenderer;
         private PlayerInput _playerInput;
         private Player _player;
         private Level _level;
@@ -28,36 +30,43 @@ namespace Core.Unity
         private void Awake()
         {
             _tickScheduler = new TickScheduler();
+            _entityRenderer = new EntityRenderer();
             _playerInput = new PlayerInput();
-            _level = new Level();
+            _level = new Level(CreateTestPathFinder());
+            _level.Geometry.AddFloor(
+                new AABB(-10f, -10f, 10f, 10f));
+            _level.Geometry.AddSolid(
+                new AABB(3f, -3f, 4f, 3f));
+            
+            _entityView = new EntityView(
+                _level,
+                _tickScheduler,
+                _entityRenderer,
+                playerPrefab,
+                entityPrefab,
+                entityContainer);
 
             _player = _level.AddPlayer(_playerInput);
             
-            var pathFinder = CreateTestPathFinder();
-
-            _player.Transform.SetPosition(
-                new System.Numerics.Vector3(8f, 0f, 8f)
-            );
-
-            _testMob = new TESTChaserMob(pathFinder);
-
-            _testMob.Transform.SetPosition(
-                new System.Numerics.Vector3(2f, 0f, 2f)
-            );
-
-            _level.AddEntity(_testMob);
-
-            entityBehaviour.Initialize(
-                _testMob,
-                _tickScheduler
-            );
-            
             _tickScheduler.Register(_level);
             tickSchedulerBehaviour.Initialize(_tickScheduler);
+            
             playerInputBehaviour.Initialize(_playerInput);
-            playerBehaviour.Initialize(
-                _player,
-                _tickScheduler);
+        }
+        
+        private static PathFinder CreateTestPathFinder()
+        {
+            var grid = new NavigationGrid(40, 40);
+
+            for (int x = 0; x < grid.Width; x++)
+            {
+                for (int z = 0; z < grid.Height; z++)
+                {
+                    grid.SetWalkable(new BlockPos(x, z), true);
+                }
+            }
+
+            return new PathFinder(grid);
         }
         
         private void Update()
@@ -69,27 +78,13 @@ namespace Core.Unity
 
         private void LateUpdate()
         {
-            playerBehaviour.Render(
+            _entityRenderer.Render(
                 (float)_tickScheduler.InterpolationAlpha);
-            
-            entityBehaviour.Render(
-                (float)_tickScheduler.InterpolationAlpha
-            );
         }
-        
-        private static PathFinder CreateTestPathFinder()
+
+        private void OnDestroy()
         {
-            var grid = new NavigationGrid(20, 20);
-
-            for (int x = 0; x < 20; x++)
-            {
-                for (int z = 0; z < 20; z++)
-                {
-                    grid.SetWalkable(x, z, true);
-                }
-            }
-
-            return new PathFinder(grid);
+            _entityView?.Dispose();
         }
     }
 }

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Core.Collection
 {
-    public sealed class MinHeap<T>
+    public sealed class PriorityQueue<T>
     {
         private readonly List<Entry> _items = new();
         
@@ -18,7 +18,7 @@ namespace Core.Collection
         public T Dequeue()
         {
             if (_items.Count == 0)
-                throw new InvalidOperationException("heap is empty");
+                throw new InvalidOperationException("queue is empty");
 
             T result = _items[0].Item;
             

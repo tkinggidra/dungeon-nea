@@ -1,7 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Numerics;
+using Core.Physics;
 using Core.Tick;
 using World.Entity;
+using World.Level.Collision;
+using World.Navigation;
 using World.Player;
 using GameEntity = World.Entity.Entity;
 using GamePlayer = World.Entity.Player;
@@ -14,6 +18,9 @@ namespace World.Level
         private readonly List<GameEntity> _entityOrder = new();
         private readonly List<GameEntity> _tickOrder = new();
         private readonly List<GamePlayer> _players = new();
+        
+        public LevelGeometry Geometry { get; } = new();
+        private readonly CollisionResolver _collisionResolver = new();
         
         private readonly List<GameEntity> _pendingAdditions = new();
         private readonly HashSet<EntityId> _pendingRemovals = new();
@@ -30,8 +37,18 @@ namespace World.Level
         public int EntityCount => _entities.Count;
         public int PlayerCount => _players.Count;
         public int TickingEntityCount => _tickOrder.Count;
+        
+        public event Action<GameEntity> EntityAdded;
+        public event Action<GameEntity> EntityRemoved;
+        
+        public PathFinder PathFinder { get; }
 
         public IReadOnlyList<GamePlayer> Players => _players;
+
+        public Level(PathFinder pathFinder)
+        {
+            PathFinder = pathFinder;
+        }
         
         public bool AddEntity(GameEntity entity)
         {
@@ -58,6 +75,18 @@ namespace World.Level
             player.AddFlag(LivingEntityFlags.Invulnerable);
             
             return AddEntity(player) ? player : null;
+        }
+
+        public Vector3 ResolveMovement(
+            AABB bounds,
+            Vector3 requestedMovement)
+        {
+            Vector2 resolved = _collisionResolver.Resolve(
+                bounds,
+                new Vector2(requestedMovement.X, requestedMovement.Z),
+                Geometry);
+            
+            return new Vector3(resolved.X, requestedMovement.Y, resolved.Y);
         }
 
         public bool RemoveEntity(GameEntity entity)
@@ -137,6 +166,7 @@ namespace World.Level
                 _players.Add(player);
             
             entity.Attach(this, id);
+            EntityAdded?.Invoke(entity);
         }
 
         private void RemoveImmediately(EntityId entityId)
@@ -152,6 +182,7 @@ namespace World.Level
                 _players.Remove(player);
             
             entity.Detach();
+            EntityRemoved?.Invoke(entity);
         }
 
         private void RefreshEntitySimulation()

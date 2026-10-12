@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Numerics;
+using Core;
 using Core.Tick;
 using GameEntity = World.Entity.Entity;
 
@@ -10,20 +11,21 @@ namespace World.Navigation
     {
         private readonly GameEntity _entity;
 
-        private readonly List<(int X, int Z)> _path = new();
+        private readonly List<BlockPos> _path = new();
         private int _waypointIndex;
         private Vector3? _finalDestination;
         
         public float Speed { get; set; } = 5f;
 
-        public bool HasPath => _waypointIndex < _path.Count;
+        public bool HasPath => _waypointIndex < _path.Count ||
+                               _finalDestination.HasValue;
 
         public PathNavigation(GameEntity entity)
         {
             _entity = entity;
         }
 
-        public void SetPath(IReadOnlyList<(int X, int Z)> path)
+        public void SetPath(IReadOnlyList<BlockPos> path)
         {
             ClearPath();
             
@@ -93,6 +95,7 @@ namespace World.Navigation
                         continue;
                     }
 
+                    ClearPath();
                     break;
                 }
 
@@ -102,9 +105,14 @@ namespace World.Navigation
                     displacement / distance * movement);
                 
                 remainingMovement -= movement;
-                
-                if (followingWaypoint && movement >= distance)
-                    _waypointIndex++;
+
+                if (movement >= distance)
+                {
+                    if (followingWaypoint)
+                        _waypointIndex++;
+                    else
+                        ClearPath();
+                }
             }
         }
     }

@@ -1,4 +1,5 @@
 ﻿using System;
+using Core;
 
 namespace World.Navigation
 {
@@ -20,23 +21,23 @@ namespace World.Navigation
             _walkables = new bool[width, height];
         }
 
-        public bool IsInBounds(int x, int z)
+        public bool IsInBounds(BlockPos position)
         {
-            return x >= 0 && x < Width &&
-                   z >= 0 && z < Height;
+            return position.X >= 0 && position.X < Width &&
+                   position.Z >= 0 && position.Z < Height;
         }
 
-        public bool IsWalkable(int x, int z)
+        public bool IsWalkable(BlockPos position)
         {
-            return IsInBounds(x, z) && _walkables[x, z];
+            return IsInBounds(position) && _walkables[position.X, position.Z];
         }
 
-        public void SetWalkable(int x, int z, bool walkable)
+        public void SetWalkable(BlockPos position, bool walkable)
         {
-            if (!IsInBounds(x, z))
+            if (!IsInBounds(position))
                 throw new ArgumentOutOfRangeException();
             
-            _walkables[x, z] = walkable;
+            _walkables[position.X, position.Z] = walkable;
         }
     }
 }

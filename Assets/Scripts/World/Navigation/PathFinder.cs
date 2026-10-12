@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Core;
 using Core.Collection;
 
 namespace World.Navigation
@@ -9,16 +10,16 @@ namespace World.Navigation
         private const int StraightCost = 10;
         private const int DiagonalCost = 14;
 
-        private static readonly (int X, int Z)[] Directions =
+        private static readonly BlockPos[] Directions =
         {
-            (0, 1),
-            (1, 0),
-            (0, -1),
-            (-1, 0),
-            (1, 1),
-            (1, -1),
-            (-1, 1),
-            (-1, -1)
+            new(0, 1),
+            new(1, 0),
+            new(0, -1),
+            new(-1, 0),
+            new(1, 1),
+            new(1, -1),
+            new(-1, 1),
+            new(-1, -1)
         };
 
         private readonly NavigationGrid _grid;
@@ -28,30 +29,25 @@ namespace World.Navigation
             _grid = grid ?? throw new ArgumentNullException(nameof(grid));
         }
         
-        public List<(int X, int Z)> FindPath(
-            int startX,
-            int startZ,
-            int goalX,
-            int goalZ)
+        public List<BlockPos> FindPath(
+            BlockPos start,
+            BlockPos goal)
         {
-            var path = new List<(int X, int Z)>();
+            var path = new List<BlockPos>();
             
-            if (!_grid.IsWalkable(startX, startZ) || !_grid.IsWalkable(goalX, goalZ))
+            if (!_grid.IsWalkable(start) || !_grid.IsWalkable(goal))
             {
-                return new List<(int, int)>();
+                return path;
             }
             
-            var start = (X: startX, Z: startZ);
-            var goal  = (X: goalX, Z: goalZ);
-            
-            var open = new MinHeap<(int X, int Z)>();
-            var closed = new HashSet<(int X, int Z)>();
+            var open = new PriorityQueue<BlockPos>();
+            var closed = new HashSet<BlockPos>();
             
             var cameFrom =
-                new Dictionary<(int X, int Z), (int X, int Z)>();
+                new Dictionary<BlockPos, BlockPos>();
             
             var gScore =
-                new Dictionary<(int X, int Z), int>();
+                new Dictionary<BlockPos, int>();
 
             gScore[start] = 0;
             open.Enqueue(start, Heuristic(start, goal));
@@ -68,12 +64,10 @@ namespace World.Navigation
 
                 foreach (var direction in Directions)
                 {
-                    int nx = current.X + direction.X;
-                    int nz = current.Z + direction.Z;
+                    BlockPos neighbor = current.Offset(
+                        direction.X, direction.Z);
 
-                    var neighbor = (X: nx, Z: nz);
-
-                    if (!_grid.IsWalkable(nx, nz) ||
+                    if (!_grid.IsWalkable(neighbor) ||
                         closed.Contains(neighbor))
                     {
                         continue;
@@ -83,11 +77,8 @@ namespace World.Navigation
                         direction.X != 0 && direction.Z != 0;
 
                     if (diagonal &&
-                        (!_grid.IsWalkable(
-                             current.X + direction.X,
-                             current.Z) ||
-                         !_grid.IsWalkable(current.X,
-                             current.Z + direction.Z)))
+                        (!_grid.IsWalkable(current.Offset(direction.X, 0)) ||
+                         !_grid.IsWalkable(current.Offset(0, direction.Z))))
                     {
                         continue;
                     }
@@ -120,8 +111,8 @@ namespace World.Navigation
         }
 
         private static int Heuristic(
-            (int X, int Z) a,
-            (int X, int Z) b)
+            BlockPos a,
+            BlockPos b)
         {
             int dx = Math.Abs(a.X - b.X);
             int dz = Math.Abs(a.Z - b.Z);
@@ -132,11 +123,11 @@ namespace World.Navigation
             return diagonal * DiagonalCost + straight * StraightCost;
         }
 
-        private static List<(int X, int Z)> ReconstructedPath(
-            Dictionary<(int X, int Z), (int X, int Z)> cameFrom,
-            (int X, int Z) current)
+        private static List<BlockPos> ReconstructedPath(
+            Dictionary<BlockPos, BlockPos> cameFrom,
+            BlockPos current)
         {
-            var path = new List<(int X, int Z)> { current };
+            var path = new List<BlockPos> { current };
 
             while (cameFrom.TryGetValue(current, out var previous))
             {
